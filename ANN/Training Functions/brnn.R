@@ -167,7 +167,7 @@ brnn.metrics <- data.frame (matrix (vector () , 5 , 20 ,
                             stringsAsFactors = F)
 
 
-# MSE
+# Performance matrices
 for (i in 1:ncol(brnn.metrics))
 {
   # Mean Square Error
