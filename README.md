@@ -50,3 +50,5 @@ generalisation ability than ANN, a SVR model was created. Radias basis kernel fu
 was chosen and to tune the hyperparameters such as cost and sigma, Bayesian optimisation
 algorithm was used. With the tuned hyperparameters, the SVR model was trained and the
 moisture ratio was predicted.
+
+![Screenshot 2023-10-13 at 21 57 08](https://github.com/daa2618/drying-pred/assets/81092551/5d8ae19f-d078-4b27-b516-66ecc8e1dd77)
