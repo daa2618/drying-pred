@@ -1,9 +1,10 @@
-
+#=============================================================#
 require (caret)
 require (kernlab)
 #install.packages("rBayesianOptimization")
 require (rBayesianOptimization)
 require (dplyr)
+#=============================================================#
 
 set.seed (69)
 drying <- read.csv('Drying.new.csv')
