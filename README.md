@@ -20,3 +20,33 @@ of important drying kinetics, which is in this case, the moisture ratio, is perf
 training the machine learning algorithms using the data obtained from experiments. Using
 this historical data, the models has been optimised using various techniques to improve their
 prediction accuracy.
+
+# Optimising the Machine Learning Algorithms
+Cross validation technique has been used to reduce the effect of overfitting of the ML models
+with the experimental data. An important contribution of this research is the extensive work
+done on the application of artificial neural networks for prediction. The ANN model’s
+performance is greatly dependent on the hyperparameters such as the activation and training
+functions. Therefore, five different training functions namely, Bayesian regularisation
+(brnn), resilient backpropagation with backtracking (rprop+), resilient backpropagation
+without backtracking (rprop-), smallest absolute gradient (sag) and smallest learning rate
+(slr) were used to train the model. An interesting thing to note is that the Bayesian
+regularised neural network resulted in poor predictive accuracy and a huge margin of error.
+One hidden layer and linear activation function for the output layer are considered for all the
+models based on previous studies.
+
+In addition to this, six activation functions were analysed and the best was chosen based on
+the minimum cross validated RMSE and maximum R2. These activation functions include,
+Elliot symmetric sigmoid (elliotsig), radial basis (radbas), rectified linear unit (reLu),
+logistic sigmoid (sigmoid), softplus, and hyperbolic tangent sigmoid (tansig). With that in
+mind and assuming sigmoid activation function for the hidden layer, rprop- and radbas
+have been identified as the best training and activation functions, respectively. The
+appropriate number of hidden neurons to obtain the best predictive accuracy from the model
+has been found with the rprop- training function and radbas activation function. With the
+obtained parameters, the ANN model was trained and used for predicting the moisture ratio.
+
+# Validation of results
+To validate the claims from literatures that support vector regression (SVR) has better
+generalisation ability than ANN, a SVR model was created. Radias basis kernel function
+was chosen and to tune the hyperparameters such as cost and sigma, Bayesian optimisation
+algorithm was used. With the tuned hyperparameters, the SVR model was trained and the
+moisture ratio was predicted.
