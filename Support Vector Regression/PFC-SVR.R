@@ -13,7 +13,7 @@ require (caret)
 set.seed (69)
 #=============================================================#
 
-drying <- read.csv('Drying.new.csv')
+drying <- read.csv('~/Files/My docs/Github/drying-pred/ANN/Training Functions/Drying.new.csv')
 drying$PR [drying$PR == 1505] <- 1
 drying$PR [drying$PR == 1005] <- 2
 drying$PR [drying$PR == 1002] <- 3
@@ -21,18 +21,22 @@ drying$PR [drying$PR == 1002] <- 3
 drying$PR <- as.integer(drying$PR)
 #=============================================================#
 drying <-  drying [sample (nrow (drying)) , ]
+head(drying)
 #=============================================================#
 
 #drying.shuffled <- drying [sample (nrow (drying)) , ]
 #=============================================================#
-
+# creating a data frame to hold the tuned process paramaeters
 pf <- data.frame(matrix(vector(), 9, 5, dimnames=list(c("TR-10", "TR-20", "TR-30" ,
                                                         "TR-40" , "TR-50" , "TR-60" ,
                                                         "TR-70" , "TR-80" , "TR-90"),
                                                       c("MSE","RMSE","SSE","SST","R2"))),
                  stringsAsFactors=F)
-
+pf
+#=============================================================#
+# initialise pfc
 pfc <- 0
+# changing the train and test percentages from 10% to 90% 
 training_data_percentages <- seq(from = 0.1, to = 0.9, length.out = 9)
 training_data_percentages
 
@@ -41,15 +45,21 @@ training_data_percentages
 for (t in training_data_percentages) {
   pfc <- pfc + 1
   
+  # create index partition based on DR by varying the percentage of split
   indx_partition <- createDataPartition(drying$DR , p = t , list = F)
+  
+  # index and create the train and test data split
   trainData <- drying [indx_partition , ]
   testData <- drying [-indx_partition , ]
   
   # model building
   
   model <- svm (MR ~ Time + VP + DT + PR , data = trainData)
+  
+  # predict the MR using the built model
   predictedMR <- predict (model, newdata = testData)
   
+  # add the performance metrics to the 'pf' dataframe
   pf [pfc , "MSE"] <- mean ((predictedMR - testData$MR)^2)
   pf [pfc , "RMSE"] <- (pf [pfc , "MSE"]) ^ 0.5
   pf [pfc , "SSE"] <- sum ((testData$MR - predictedMR) ^ 2)
@@ -59,9 +69,11 @@ for (t in training_data_percentages) {
 }
 
 pf
-#write.csv (pf , 'performance metrics10.csv')
-# Lowest RMSE and highest R 2 occured when 70% is assigned for training and 30% for testing
 
+#write.csv (pf , 'performance metrics10.csv')
+#=============================================================#
+# Lowest RMSE and highest R 2 occured when 70% is assigned for training and 30% for testing
+#=============================================================#
 # tuning the model
 for (t in training_data_percentages) {
   pfc <- pfc + 1
@@ -70,10 +82,13 @@ for (t in training_data_percentages) {
   trainData <- drying [indx_partition , ]
   testData <- drying [-indx_partition , ]
   
-  # model building
+  #  building the tuned model by changing the epsilon and cost
   
-  model.tune <- tune(svm , MR ~ Time + VP + DT + PR , data = trainData ,
-                     ranges = list (epsilon = seq(0 , 1 , 0.1) , cost = 2 ^ (2:9)))
+  model.tune <- tune(svm , 
+                     MR ~ Time + VP + DT + PR , data = trainData ,
+                     ranges = list (epsilon = seq(0 , 1 , 0.1) , 
+                                    cost = 2 ^ (2:9)))
+  
   print (model.tune) # prints mse values
   
   plot(model.tune)
@@ -85,7 +100,7 @@ for (t in training_data_percentages) {
   #pf [pfc , "R2"] <- 1 - ((pf [pfc , "SSE"]) / (pf [pfc , "SST"]))
   
 }
-
+#=============================================================#
 # tuning the model
 
 pf2 <- data.frame(matrix(vector(), 9, 5, dimnames=list(c("TR-10", "TR-20", "TR-30" ,
@@ -93,9 +108,9 @@ pf2 <- data.frame(matrix(vector(), 9, 5, dimnames=list(c("TR-10", "TR-20", "TR-3
                                                          "TR-70" , "TR-80" , "TR-90"),
                                                        c("MSE","RMSE","SSE","SST","R2"))),
                   stringsAsFactors=F)
-
+#=============================================================#
 pfc2 <- 0
-
+#=============================================================#
 for (t in training_data_percentages) {
   pfc2 <- pfc2 + 1
   
@@ -122,8 +137,10 @@ for (t in training_data_percentages) {
   
 }
 
+# compare the performace metrics
 pf
 pf2
+#=============================================================#
 # EXTRACTING THE TRAINING AND TEST DATA FOR 60% TRANING
 #set.seed (123)
 indx_partition60 <- createDataPartition(drying$DR , p = 0.6 , list = F)
@@ -132,7 +149,7 @@ testData60 <- drying [-indx_partition60 , ]
 
 write.csv (trainData60 , 'trainData60.csv')
 write.csv (testData60 , 'testData60.csv')
-
+#=============================================================#
 # scaling the data
 maxs.train60 <- apply (trainData60 , 2 , max)
 mins.train60 <- apply (trainData60 , 2 , min)
@@ -140,16 +157,16 @@ maxs.test60 <- apply (testData60 , 2, max)
 mins.test60 <- apply (testData60 , 2 , min)
 trainData60.scaled <- scale (trainData60 , center = mins.train60 , scale = maxs.train60 - mins.train60)
 testData60.scaled <- scale (testData60 , center = mins.test60 , scale = maxs.test60 - mins.test60)
-
+#=============================================================#
 # model building
 model60 <- neuralnet(DR ~ ., data = trainData60.scaled , hidden = c(5,3) , linear.output = T)
 plot (model60)
-
+#=============================================================#
 #undo the scaling
 unnormalize <- function (x) {
   return ((x * (max(testData$DR)) - min (testData$DR)) + min (testData$DR))
 }
-
+#=============================================================#
 # getting predictions
 pred60 <- neuralnet :: compute (model60 , testData60.scaled)
 
@@ -162,7 +179,8 @@ results60 <- as.data.frame(results60)
 
 df60 <- results60 %>% gather (key = "variable" , value = "value" , - DryingTime)
 head (df60)
-
+#=============================================================#
+# Plotting results
 ggplot (df60 , aes (x = DryingTime , y = value)) +
   geom_line (aes(color = variable , linetype = variable)) +
   scale_color_manual(values = c ("darkred" , "steelblue")) + 
@@ -174,13 +192,14 @@ ggplot (df60 , aes (x = DryingTime , y = value)) +
   scale_color_manual(values = c ("darkred" , "steelblue")) + 
   xlab ('Drying Time (min)') + ylab ('Drying Rate (g/g.dm)') + theme_bw() +
   ggtitle('Drying Rates Predicted by ANN') + stat_smooth()
-
+#=============================================================#
 mse60 <- mean ((testData60$DR - predictedDR60) ^ 2) # 1.294299e-05
 rmse60 <- mse60^0.5 # 0.003597636
 sse60 <- sum ((testData60$DR - predictedDR60) ^ 2)  # 0.001553158
 sst60 <- sum ((testData60$DR - mean (trainData60$DR)) ^ 2) # 0.008741237
 r2.60 <- 1 - (sse60 / sst60) # 0.8223183
 #pf
+#=============================================================#
 
 
 
