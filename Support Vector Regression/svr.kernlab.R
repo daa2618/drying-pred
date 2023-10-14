@@ -8,8 +8,9 @@ require (dplyr)
 
 set.seed (69)
 #=============================================================#
-
-drying <- read.csv('Drying.new.csv')
+# get the data
+drying <- read.csv('~/Files/My docs/Github/drying-pred/ANN/Training Functions/Drying.new.csv')
+#=============================================================#
 drying$PR [drying$PR == 1505] <- 1
 drying$PR [drying$PR == 1005] <- 2
 drying$PR [drying$PR == 1002] <- 3
@@ -17,14 +18,20 @@ drying$PR [drying$PR == 1002] <- 3
 drying$PR <- as.integer(drying$PR)
 
 drying <-  drying [sample (nrow (drying)) , ]
-
+#=============================================================#
 set.seed(69)
+#=============================================================#
+# train-test split
 indx_partition <- createDataPartition(drying$DR , p = 0.8 , list = F)
 trainData <- drying [indx_partition , ]
 testData <- drying [-indx_partition , ]
-
+#=============================================================#
+# Train control using 5-fold repeated cross validation
 rand_ctrl <- trainControl(method = "repeatedcv" , repeats = 5 ,
                           search = "random")
+#=============================================================#
+# Training the data using 'svmRadial'
+
 rand_search <- train (MR ~ Time + VP + DT + PR , 
                       data = trainData ,
                       method = "svmRadial" ,
@@ -34,9 +41,13 @@ rand_search <- train (MR ~ Time + VP + DT + PR ,
                       preProc = c("center" , "scale") ,
                       trControl = rand_ctrl)
 rand_search
-
+#=============================================================#
+# Plotting 
 ggplot (rand_search , color = "blue") + scale_x_log10() + scale_y_log10() + theme_bw()
+#=============================================================#
 getTrainPerf(rand_search)
+#=============================================================#
+# Resampling
 
 ## Define the resampling method
 
@@ -57,7 +68,8 @@ svm_fit_bayes <- function (logC , logSigma) {
   
   list (Score = - getTrainPerf(mod) [ , "TrainRMSE"] , Pred =0)
 }
-
+#=============================================================#
+# setting bounds for grid-searching
 lower_bounds <- c(logC = -5 , logSigma = -9)
 upper_bounds <- c (logC = 20 , logSigma = -0.75)
 bounds <- list (logC = c(lower_bounds[1], upper_bounds[1]),
@@ -69,9 +81,9 @@ initial_grid$sigma <- log(initial_grid$sigma)
 initial_grid$RMSE <- -initial_grid$RMSE
 names(initial_grid) <- c("logC", "logSigma", "Value")
 
-
-
+#=============================================================#
 set.seed(69)
+#=============================================================#
 ba_search <- BayesianOptimization(svm_fit_bayes ,
                                   bounds = bounds ,
                                   init_grid_dt = initial_grid ,
@@ -81,7 +93,7 @@ ba_search <- BayesianOptimization(svm_fit_bayes ,
                                   kappa = 1,
                                   eps = 0.0,
                                   verbose = T)
-
+#=============================================================#
 final_search <- train (MR ~ Time + VP + DT + PR , 
                        data = trainData ,
                        method = "svmRadial" ,
@@ -91,9 +103,11 @@ final_search <- train (MR ~ Time + VP + DT + PR ,
                        metric = "RMSE" ,
                        preProc = c("center" , "scale") ,
                        trControl = ctrl)
+#=============================================================#
+# comparing the models 
 
 compare_models(final_search , rand_search)
-
+#=============================================================#
 postResample(predict(rand_search , testData) , testData$MR)
 postResample(predict(final_search , testData) , testData$MR)
 
@@ -102,7 +116,7 @@ predictedMR <- predict (final_search , testData)
 results <- cbind(testData$Time , testData$VP , testData$MR , predictedMR)
 colnames(results) <- c ('DryingTime' , 'VacuumPressure' , 'ActualMR' , 'PredictedMR')
 results <- data.frame(results)
-
+#=============================================================#
 
 # t test
 
@@ -116,6 +130,7 @@ my_data <- data.frame(
 
 my_data
 str (my_data)
+#=============================================================#
 # Computing summary statistics by groups
 group_by (my_data , group) %>% 
   summarise (
@@ -123,7 +138,7 @@ group_by (my_data , group) %>%
     mean = mean (MR , na.rm = T),
     sd = sd (MR , na.rm = T)
   )
-
+#=============================================================#
 #if (!require (devtools)) install.packages("devtools")
 install.packages("ggpubr")
 require (ggpubr)
@@ -133,7 +148,7 @@ ggboxplot (my_data , x = "group" , y = "MR" ,
            order = c ("ActualMR" , "PredictedMR") ,
            ylab = "Moisture Ratio" , xlab = "Groups")
 
-
+#=============================================================#
 install.packages("PairedData")
 require (PairedData)
 
@@ -144,7 +159,7 @@ PredictedMR <- subset(my_data,  group == "PredictedMR", MR,
 
 pd <- paired(ActualMR , PredictedMR)
 plot (pd , type = "profile") + theme_bw()
-
+#=============================================================#
 # check normality
 #Null hypothesis: the data are normally distributed
 #Alternative hypothesis: the data are not normally distributed
@@ -214,7 +229,7 @@ qqPlot (my_data$MR)
 
 # As all the points fall approximately along this reference line, we can assume normality.
 
-
+#=============================================================#
 # F test
 res.ftest <- var.test(MR ~ group , data = my_data)
 res.ftest
@@ -224,7 +239,8 @@ res.ftest
 # 95% CI [ 0.6324151 1.7724812]
 
 
-
+#=============================================================#
 # Levene's test
 # Levene’s test is an alternative to Bartlett’s test when the data is not normally distributed.
 leveneTest(MR ~ group , data = my_data) # p value = 0.7993
+#=============================================================#
